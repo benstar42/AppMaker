@@ -3,18 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EroDev - App Builder</title>
+<title>PRO EroDev APK Builder</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 <style>
 body {
     margin: 0;
     font-family: Arial;
-    background: #0f172a;
+    background: #0b1220;
     color: white;
 }
 
 header {
-    background: #2563eb;
+    background: linear-gradient(90deg,#2563eb,#22c55e);
     padding: 15px;
     text-align: center;
     font-size: 20px;
@@ -26,136 +28,156 @@ header {
     height: calc(100vh - 60px);
 }
 
-.editor {
+.left, .right {
     width: 50%;
     padding: 10px;
     box-sizing: border-box;
 }
 
-textarea {
+input, textarea, button {
     width: 100%;
-    height: 30%;
-    margin-bottom: 10px;
-    background: #111827;
-    color: #fff;
-    border: 1px solid #334155;
+    margin-top: 10px;
     padding: 10px;
     border-radius: 8px;
+    border: none;
 }
 
-iframe {
-    width: 50%;
-    height: 100%;
-    border: none;
-    background: white;
+textarea {
+    height: 150px;
+    background: #111827;
+    color: white;
 }
 
 button {
-    width: 100%;
-    padding: 10px;
-    margin-top: 5px;
     background: #22c55e;
-    border: none;
-    color: white;
     font-weight: bold;
-    border-radius: 8px;
     cursor: pointer;
 }
 
-.project-list {
-    margin-top: 10px;
-    font-size: 14px;
+.preview {
+    background: white;
+    height: 100%;
+    border-radius: 10px;
 }
-
-.project-item {
-    background: #1e293b;
-    padding: 5px;
-    margin-top: 5px;
-    border-radius: 5px;
-    cursor: pointer;
+.small {
+    font-size: 12px;
+    opacity: 0.7;
 }
 </style>
 </head>
 
 <body>
 
-<header>⚡ EroDev - App Builder (HTML/CSS/JS)</header>
+<header>⚡ PRO EroDev APK Builder</header>
 
 <div class="container">
 
-<div class="editor">
+<!-- LEFT PANEL -->
+<div class="left">
 
-<h3>HTML</h3>
-<textarea id="html"></textarea>
+<input id="appName" placeholder="📱 Non App">
+<input id="packageName" placeholder="📦 Package (com.erodev.app)">
+<input id="icon" placeholder="🔗 Icon URL (opsyonèl)">
 
-<h3>CSS</h3>
-<textarea id="css"></textarea>
+<p class="small">Mete HTML app ou:</p>
+<textarea id="htmlCode"><h1>🔥 My First Pro App</h1></textarea>
 
-<h3>JS</h3>
-<textarea id="js"></textarea>
+<p class="small">CSS (opsyonèl):</p>
+<textarea id="cssCode">body{font-family:Arial;text-align:center;}</textarea>
 
-<button onclick="runCode()">▶ Run App</button>
-<button onclick="saveProject()">💾 Save Project</button>
+<p class="small">JS (opsyonèl):</p>
+<textarea id="jsCode">console.log("App Loaded");</textarea>
 
-<div class="project-list" id="projects"></div>
+<button onclick="runPreview()">👁 Preview</button>
+<button onclick="buildAPK()">📦 Generate APK Project (ZIP)</button>
 
 </div>
 
-<iframe id="output"></iframe>
+<!-- RIGHT PANEL -->
+<div class="right">
+<iframe id="preview" class="preview"></iframe>
+</div>
 
 </div>
 
 <script>
 
-function runCode() {
-    let html = document.getElementById("html").value;
-    let css = "<style>" + document.getElementById("css").value + "</style>";
-    let js = "<script>" + document.getElementById("js").value + "<\/script>";
+// 🔥 PREVIEW FUNCTION
+function runPreview() {
+let html = document.getElementById("htmlCode").value;
+let css = "<style>" + document.getElementById("cssCode").value + "</style>";
+let js = "<script>" + document.getElementById("jsCode").value + "<\/script>";
 
-    let output = document.getElementById("output").contentWindow.document;
-    output.open();
-    output.write(html + css + js);
-    output.close();
+let doc = document.getElementById("preview").contentWindow.document;
+doc.open();
+doc.write(html + css + js);
+doc.close();
 }
 
-let projects = JSON.parse(localStorage.getItem("erodev_projects") || "[]");
+// 📦 BUILD APK PROJECT
+function buildAPK() {
 
-function saveProject() {
-    let name = prompt("Non pwojè a:");
-    if (!name) return;
+let name = document.getElementById("appName").value || "EroApp";
+let pkg = document.getElementById("packageName").value || "com.erodev.app";
 
-    let project = {
-        name,
-        html: document.getElementById("html").value,
-        css: document.getElementById("css").value,
-        js: document.getElementById("js").value
-    };
+let html = document.getElementById("htmlCode").value;
+let css = document.getElementById("cssCode").value;
+let js = document.getElementById("jsCode").value;
 
-    projects.push(project);
-    localStorage.setItem("erodev_projects", JSON.stringify(projects));
-    loadProjects();
+let zip = new JSZip();
+
+// 📁 config.xml (Cordova style)
+zip.file("config.xml", `
+<widget id="${pkg}" version="1.0.0">
+  <name>${name}</name>
+  <content src="www/index.html"/>
+</widget>
+`);
+
+// 📁 index.html app
+zip.file("www/index.html", `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${name}</title>
+<style>${css}</style>
+</head>
+<body>
+
+${html}
+
+<script>${js}<\/script>
+
+</body>
+</html>
+`);
+
+// 📁 README (APK guide)
+zip.file("HOW_TO_BUILD_APK.txt", `
+PRO EroDev APK Builder
+
+1. Install Node.js
+2. npm install -g cordova
+3. cordova create ${name}
+4. Replace www folder with this project
+5. Run: cordova build android
+
+OR use:
+- Capacitor (recommended modern way)
+- npx cap add android
+- npx cap open android
+`);
+
+zip.generateAsync({type:"blob"}).then(function(content){
+let a = document.createElement("a");
+a.href = URL.createObjectURL(content);
+a.download = name + "_PRO_EroDev.zip";
+a.click();
+});
+
 }
-
-function loadProjects() {
-    let list = document.getElementById("projects");
-    list.innerHTML = "<b>📂 Pwojè ou yo:</b>";
-
-    projects.forEach((p, i) => {
-        let div = document.createElement("div");
-        div.className = "project-item";
-        div.innerText = p.name;
-
-        div.onclick = () => {
-            document.getElementById("html").value = p.html;
-            document.getElementById("css").value = p.css;
-            document.getElementById("js").value = p.js;
-        };
-
-        list.appendChild(div);
-    });
-}
-
-loadProjects();
 
 </script>
 
