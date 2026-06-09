@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PRO EroDev APK Builder</title>
+<title>EroDev Ultra Pro</title>
+
+<link rel="manifest" href="manifest.json">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
@@ -11,12 +13,12 @@
 body {
     margin: 0;
     font-family: Arial;
-    background: #0b1220;
+    background: #050b18;
     color: white;
 }
 
 header {
-    background: linear-gradient(90deg,#2563eb,#22c55e);
+    background: linear-gradient(90deg,#2563eb,#7c3aed,#22c55e);
     padding: 15px;
     text-align: center;
     font-size: 20px;
@@ -28,24 +30,29 @@ header {
     height: calc(100vh - 60px);
 }
 
-.left, .right {
+.panel {
     width: 50%;
     padding: 10px;
     box-sizing: border-box;
 }
 
-input, textarea, button {
+textarea {
     width: 100%;
+    height: 120px;
     margin-top: 10px;
-    padding: 10px;
     border-radius: 8px;
     border: none;
-}
-
-textarea {
-    height: 150px;
+    padding: 10px;
     background: #111827;
     color: white;
+}
+
+input, button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 8px;
+    border: none;
 }
 
 button {
@@ -54,129 +61,164 @@ button {
     cursor: pointer;
 }
 
-.preview {
-    background: white;
+iframe {
+    width: 100%;
     height: 100%;
+    border: none;
+    background: white;
     border-radius: 10px;
 }
-.small {
-    font-size: 12px;
-    opacity: 0.7;
+
+.list {
+    margin-top: 10px;
+    font-size: 13px;
+}
+
+.item {
+    background: #1e293b;
+    padding: 8px;
+    margin-top: 5px;
+    border-radius: 6px;
+    cursor: pointer;
 }
 </style>
 </head>
 
 <body>
 
-<header>⚡ PRO EroDev APK Builder</header>
+<header>⚡ ERODEV ULTRA PRO BUILDER</header>
 
 <div class="container">
 
-<!-- LEFT PANEL -->
-<div class="left">
+<!-- LEFT -->
+<div class="panel">
 
-<input id="appName" placeholder="📱 Non App">
-<input id="packageName" placeholder="📦 Package (com.erodev.app)">
-<input id="icon" placeholder="🔗 Icon URL (opsyonèl)">
+<input id="appName" placeholder="📱 App Name">
+<input id="pkg" placeholder="📦 Package (com.erodev.app)">
 
-<p class="small">Mete HTML app ou:</p>
-<textarea id="htmlCode"><h1>🔥 My First Pro App</h1></textarea>
+<textarea id="html" placeholder="HTML"></textarea>
+<textarea id="css" placeholder="CSS"></textarea>
+<textarea id="js" placeholder="JS"></textarea>
 
-<p class="small">CSS (opsyonèl):</p>
-<textarea id="cssCode">body{font-family:Arial;text-align:center;}</textarea>
+<button onclick="preview()">👁 Preview</button>
+<button onclick="save()">💾 Save Project</button>
+<button onclick="exportZIP()">📦 Export APK Project</button>
 
-<p class="small">JS (opsyonèl):</p>
-<textarea id="jsCode">console.log("App Loaded");</textarea>
-
-<button onclick="runPreview()">👁 Preview</button>
-<button onclick="buildAPK()">📦 Generate APK Project (ZIP)</button>
+<div class="list" id="list"></div>
 
 </div>
 
-<!-- RIGHT PANEL -->
-<div class="right">
-<iframe id="preview" class="preview"></iframe>
+<!-- RIGHT -->
+<div class="panel">
+<iframe id="frame"></iframe>
 </div>
 
 </div>
 
 <script>
 
-// 🔥 PREVIEW FUNCTION
-function runPreview() {
-let html = document.getElementById("htmlCode").value;
-let css = "<style>" + document.getElementById("cssCode").value + "</style>";
-let js = "<script>" + document.getElementById("jsCode").value + "<\/script>";
+let projects = JSON.parse(localStorage.getItem("ultra_projects") || "[]");
 
-let doc = document.getElementById("preview").contentWindow.document;
+// 👁 PREVIEW
+function preview(){
+let h = html.value;
+let c = "<style>"+css.value+"</style>";
+let j = "<script>"+js.value+"<\/script>";
+
+let doc = document.getElementById("frame").contentWindow.document;
 doc.open();
-doc.write(html + css + js);
+doc.write(h + c + j);
 doc.close();
 }
 
-// 📦 BUILD APK PROJECT
-function buildAPK() {
+// 💾 SAVE
+function save(){
+let name = appName.value || "App";
 
-let name = document.getElementById("appName").value || "EroApp";
-let pkg = document.getElementById("packageName").value || "com.erodev.app";
+projects.push({
+name,
+html: html.value,
+css: css.value,
+js: js.value
+});
 
-let html = document.getElementById("htmlCode").value;
-let css = document.getElementById("cssCode").value;
-let js = document.getElementById("jsCode").value;
+localStorage.setItem("ultra_projects", JSON.stringify(projects));
+load();
+}
+
+// 📂 LOAD
+function load(){
+let list = document.getElementById("list");
+list.innerHTML = "<b>📂 Projects</b>";
+
+projects.forEach((p,i)=>{
+let div = document.createElement("div");
+div.className = "item";
+div.innerText = p.name;
+
+div.onclick = ()=>{
+html.value = p.html;
+css.value = p.css;
+js.value = p.js;
+};
+
+list.appendChild(div);
+});
+}
+
+load();
+
+// 📦 EXPORT ZIP
+function exportZIP(){
+
+let name = appName.value || "EroApp";
+let pkgName = pkg.value || "com.erodev.app";
 
 let zip = new JSZip();
 
-// 📁 config.xml (Cordova style)
 zip.file("config.xml", `
-<widget id="${pkg}" version="1.0.0">
+<widget id="${pkgName}">
   <name>${name}</name>
   <content src="www/index.html"/>
 </widget>
 `);
 
-// 📁 index.html app
 zip.file("www/index.html", `
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${name}</title>
-<style>${css}</style>
+<style>${css.value}</style>
 </head>
 <body>
-
-${html}
-
-<script>${js}<\/script>
-
+${html.value}
+<script>${js.value}<\/script>
 </body>
 </html>
 `);
 
-// 📁 README (APK guide)
-zip.file("HOW_TO_BUILD_APK.txt", `
-PRO EroDev APK Builder
+zip.file("BUILD.txt", `
+Use Capacitor:
+npx cap add android
+npx cap open android
 
-1. Install Node.js
-2. npm install -g cordova
-3. cordova create ${name}
-4. Replace www folder with this project
-5. Run: cordova build android
-
-OR use:
-- Capacitor (recommended modern way)
-- npx cap add android
-- npx cap open android
+OR Cordova:
+cordova build android
 `);
 
-zip.generateAsync({type:"blob"}).then(function(content){
+zip.generateAsync({type:"blob"}).then(blob=>{
 let a = document.createElement("a");
-a.href = URL.createObjectURL(content);
-a.download = name + "_PRO_EroDev.zip";
+a.href = URL.createObjectURL(blob);
+a.download = name+"_ULTRA_PRO.zip";
 a.click();
 });
 
+}
+
+// 🔥 PWA AUTO REGISTER
+if ("serviceWorker" in navigator){
+navigator.serviceWorker.register("sw.js");
 }
 
 </script>
