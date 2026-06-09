@@ -3,173 +3,171 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EroDev Sketch-Like</title>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<title>EroDev Visual Builder</title>
 
 <style>
 body {
     margin: 0;
     font-family: Arial;
-    background: #0a0f1f;
+    background: #0b1020;
     color: white;
-}
-
-header {
-    background: #7c3aed;
-    padding: 15px;
-    text-align: center;
-    font-weight: bold;
-}
-
-.container {
     display: flex;
-    height: calc(100vh - 60px);
 }
 
-.left {
-    width: 40%;
-    padding: 10px;
-}
-
-.right {
-    width: 60%;
-    background: white;
-}
-
-input, textarea, button {
-    width: 100%;
-    margin-top: 10px;
-    padding: 10px;
-    border-radius: 8px;
-    border: none;
-}
-
-textarea {
-    height: 120px;
+.panel {
+    width: 25%;
     background: #111827;
-    color: white;
+    padding: 10px;
+    height: 100vh;
+    overflow: auto;
 }
 
-button {
-    background: #22c55e;
-    font-weight: bold;
+.canvas {
+    width: 50%;
+    background: white;
+    height: 100vh;
+    position: relative;
+}
+
+.prop {
+    width: 25%;
+    background: #1f2937;
+    padding: 10px;
 }
 
 .block {
-    background: #1e293b;
+    background: #2563eb;
     padding: 10px;
-    margin-top: 5px;
-    border-radius: 8px;
+    margin: 5px 0;
     cursor: pointer;
+    text-align: center;
+    border-radius: 6px;
 }
 
-iframe {
+.el {
+    position: absolute;
+    padding: 10px;
+    background: #e5e7eb;
+    color: black;
+    cursor: move;
+    border-radius: 5px;
+}
+
+input {
     width: 100%;
-    height: 100%;
+    padding: 8px;
+    margin-top: 5px;
+}
+button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    background: #22c55e;
     border: none;
+    color: white;
+    font-weight: bold;
 }
 </style>
 </head>
 
 <body>
 
-<header>⚡ EroDev Sketch-Like Builder</header>
+<!-- LEFT PANEL -->
+<div class="panel">
+<h3>🧱 Eleman</h3>
 
-<div class="container">
+<div class="block" onclick="add('button')">Button</div>
+<div class="block" onclick="add('text')">Text</div>
+<div class="block" onclick="add('box')">Box</div>
 
-<!-- LEFT -->
-<div class="left">
-
-<input id="appName" placeholder="📱 App Name">
-
-<h3>🧱 Blocks (simple)</h3>
-
-<div class="block" onclick="addBlock('button')">➕ Button</div>
-<div class="block" onclick="addBlock('text')">📝 Text</div>
-<div class="block" onclick="addBlock('image')">🖼 Image</div>
-
-<textarea id="code" placeholder="App code ap parèt la"></textarea>
-
-<button onclick="preview()">👁 Preview</button>
-<button onclick="buildAPK()">📦 Build APK Project</button>
-
+<button onclick="exportProject()">📦 Export APK Project</button>
 </div>
 
-<!-- RIGHT -->
-<div class="right">
-<iframe id="preview"></iframe>
-</div>
+<!-- CANVAS -->
+<div class="canvas" id="canvas"></div>
 
+<!-- PROPERTIES -->
+<div class="prop">
+<h3>⚙ Modify</h3>
+
+<input id="txt" placeholder="Text">
+<input id="color" placeholder="Color">
+<button onclick="apply()">Apply</button>
 </div>
 
 <script>
 
-function addBlock(type){
+let selected = null;
 
-let c = code.value;
+// ➕ ADD ELEMENT
+function add(type){
 
-if(type === "button"){
-c += `<button onclick="alert('Click!')">Button</button>\n`;
+let el = document.createElement("div");
+el.className = "el";
+el.innerText = type === "button" ? "Button" :
+                type === "text" ? "Text" : "Box";
+
+el.style.left = "50px";
+el.style.top = "50px";
+
+el.onclick = ()=>select(el);
+
+// drag simple
+el.onmousedown = function(e){
+selected = el;
+
+document.onmousemove = function(e){
+el.style.left = e.pageX + "px";
+el.style.top = e.pageY + "px";
 }
 
-if(type === "text"){
-c += `<h2>Hello Text</h2>\n`;
+document.onmouseup = function(){
+document.onmousemove = null;
+}
 }
 
-if(type === "image"){
-c += `<img src="https://via.placeholder.com/300">\n`;
+document.getElementById("canvas").appendChild(el);
 }
 
-code.value = c;
+// 🎯 SELECT ELEMENT
+function select(el){
+selected = el;
+document.getElementById("txt").value = el.innerText;
+document.getElementById("color").value = el.style.background || "";
 }
 
-// 👁 PREVIEW
-function preview(){
-let doc = document.getElementById("preview").contentWindow.document;
-doc.open();
-doc.write(code.value);
-doc.close();
+// ⚙ APPLY MODIFICATION
+function apply(){
+if(!selected) return;
+
+selected.innerText = document.getElementById("txt").value;
+selected.style.background = document.getElementById("color").value;
 }
 
-// 📦 BUILD APK PROJECT
-function buildAPK(){
+// 📦 EXPORT PROJECT
+function exportProject(){
 
-let name = appName.value || "EroApp";
+let elements = document.querySelectorAll(".el");
 
-let zip = new JSZip();
+let html = "<!DOCTYPE html><html><body>";
 
-zip.file("www/index.html", `
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>${name}</title>
-</head>
-<body>
-${code.value}
-</body>
-</html>
-`);
-
-zip.file("BUILD.txt", `
-Sketch-like Project
-
-Use Capacitor:
-npx cap add android
-npx cap open android
-
-OR Cordova:
-cordova build android
-`);
-
-zip.generateAsync({type:"blob"}).then(blob=>{
-let a = document.createElement("a");
-a.href = URL.createObjectURL(blob);
-a.download = name+"_SketchLike.zip";
-a.click();
+elements.forEach(e=>{
+html += `<div style="
+position:absolute;
+left:${e.style.left};
+top:${e.style.top};
+background:${e.style.background};
+padding:10px;
+">${e.innerText}</div>`;
 });
 
+html += "</body></html>";
+
+let blob = new Blob([html], {type:"text/html"});
+let a = document.createElement("a");
+a.href = URL.createObjectURL(blob);
+a.download = "EroDev_App.html";
+a.click();
 }
 
 </script>
